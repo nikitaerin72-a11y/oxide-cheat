@@ -7,8 +7,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Unzip
-        run: unzip -o jni.zip
+      - name: Unzip and Prepare
+        run: |
+          # Создаем временную папку и распаковываем туда всё
+          mkdir temp_build
+          unzip -o jni.zip -d temp_build
+          
+          # Создаем структуру, которую хочет NDK
+          mkdir jni
+          # Перемещаем всё содержимое из temp_build в jni
+          mv temp_build/* jni/
+          
+          echo "--- Проверка структуры (должна быть папка jni) ---"
+          ls -F
 
       - name: Set up NDK
         uses: nttld/setup-ndk@v1
@@ -17,24 +28,21 @@ jobs:
 
       - name: Build
         run: |
-          # Мы принудительно заходим в папку jni, где бы она ни была
-          JNI_PATH=$(find . -name "jni" -type d -print -quit)
-          if [ -z "$JNI_PATH" ]; then
-            echo "ОШИБКА: Папка jni не найдена!"
-            exit 1
-          fi
-          cd "$JNI_PATH"
+          # Теперь папка jni точно есть, запускаем сборку
           ndk-build
-          
+
       - name: Collect and Upload
         if: success()
         run: |
           mkdir -p final_output
-          # Ищем все .so файлы в папке libs, которая создается после сборки
-          find . -path "*/libs/*.so" -exec cp {} final_output/ \;
+          # Ищем готовые .so файлы в созданной папке libs
+          find libs/ -name "*.so" -exec cp {} final_output/ \;
           
       - name: Upload
         uses: actions/upload-artifact@v4
+        with:
+          name: Kriware_Fixed_Build
+          path: final_output/        uses: actions/upload-artifact@v4
         with:
           name: Kriware_Fixed
           path: final_output/
