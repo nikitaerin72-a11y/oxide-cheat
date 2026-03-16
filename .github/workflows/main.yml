@@ -1,0 +1,31 @@
+name: Build Kriware
+on: [push, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Unzip Project
+        run: |
+          # Распаковываем твой архив jni.zip (маленькими буквами)
+          unzip -o jni.zip
+          # Проверяем, что папки появились (выведет список в логах)
+          ls -R
+
+      - name: Set up NDK
+        uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r25c
+
+      - name: Build with ndk-build
+        run: |
+          # Ищем Android.mk внутри распакованных папок и запускаем сборку
+          find . -name "Android.mk" -execdir ndk-build \;
+
+      - name: Upload Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: Kriware_Binaries
+          path: "**/libs/**/*"
