@@ -7,22 +7,27 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Unzip Project
-        run: |
-          unzip -o jni.zip
-          ls -R
+      - name: Unzip
+        run: unzip -o jni.zip
 
       - name: Set up NDK
         uses: nttld/setup-ndk@v1
         with:
           ndk-version: r25c
 
-      - name: Build with ndk-build
-        run: |
-          find . -name "Android.mk" -execdir ndk-build \;
+      - name: Build
+        run: find . -name "Android.mk" -execdir ndk-build \;
 
-      - name: Upload Results
+      - name: Find and Collect Files
+        run: |
+          mkdir -p final_files
+          # Эта команда найдет все .so файлы и скопирует их в одну папку
+          find . -name "*.so" -type f -exec cp {} final_files/ \;
+          echo "Найденные файлы:"
+          ls final_files
+
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: Kriware_Binaries
-          path: "**/libs/**/*"
+          name: Kriware_Ready
+          path: final_files/
