@@ -16,18 +16,25 @@ jobs:
           ndk-version: r25c
 
       - name: Build
-        run: find . -name "Android.mk" -execdir ndk-build \;
-
-      - name: Find and Collect Files
         run: |
-          mkdir -p final_files
-          # Эта команда найдет все .so файлы и скопирует их в одну папку
-          find . -name "*.so" -type f -exec cp {} final_files/ \;
-          echo "Найденные файлы:"
-          ls final_files
-
+          # Мы принудительно заходим в папку jni, где бы она ни была
+          JNI_PATH=$(find . -name "jni" -type d -print -quit)
+          if [ -z "$JNI_PATH" ]; then
+            echo "ОШИБКА: Папка jni не найдена!"
+            exit 1
+          fi
+          cd "$JNI_PATH"
+          ndk-build
+          
+      - name: Collect and Upload
+        if: success()
+        run: |
+          mkdir -p final_output
+          # Ищем все .so файлы в папке libs, которая создается после сборки
+          find . -path "*/libs/*.so" -exec cp {} final_output/ \;
+          
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: Kriware_Ready
-          path: final_files/
+          name: Kriware_Fixed
+          path: final_output/
